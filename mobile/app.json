@@ -1,0 +1,32 @@
+{
+  "expo": {
+    "name": "SharkID",
+    "slug": "sharkid",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "scheme": "sharkid",
+    "userInterfaceStyle": "dark",
+    "assetBundlePatterns": ["**/*"],
+    "ios": {
+      "supportsTablet": false,
+      "infoPlist": {
+        "NSCameraUsageDescription": "SharkID needs camera access to identify sharks."
+      }
+    },
+    "android": {
+      "adaptiveIcon": {
+        "backgroundColor": "#000000"
+      },
+      "permissions": ["android.permission.CAMERA"]
+    },
+    "plugins": [
+      "expo-router",
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "SharkID needs camera access to identify sharks."
+        }
+      ]
+    ]
+  }
+}
