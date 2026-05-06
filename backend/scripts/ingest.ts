@@ -14,7 +14,7 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_KEY!
 );
 
-const PDF_PATH = path.join(__dirname, "../data/sharks.pdf");
+const DATA_DIR = path.join(__dirname, "../data");
 const CHUNK_SIZE = 800;
 const CHUNK_OVERLAP = 100;
 
@@ -47,29 +47,45 @@ async function insertChunk(content: string, embedding: number[]): Promise<void> 
   if (error) throw new Error(`Insert error: ${error.message}`);
 }
 
-async function main() {
-  if (!fs.existsSync(PDF_PATH)) {
-    console.error(`PDF not found at ${PDF_PATH}`);
-    console.error("Place sharks.pdf in backend/data/ and try again.");
-    process.exit(1);
-  }
-
-  console.log("Reading PDF...");
-  const buffer = fs.readFileSync(PDF_PATH);
+async function ingestPdf(filePath: string): Promise<number> {
+  console.log(`\nReading ${path.basename(filePath)}...`);
+  const buffer = fs.readFileSync(filePath);
   const data = await pdf(buffer);
-  const rawText = data.text;
-  console.log(`Extracted ${rawText.length} characters from PDF`);
+  console.log(`  Extracted ${data.text.length} characters`);
 
-  const chunks = chunkText(rawText);
-  console.log(`Split into ${chunks.length} chunks`);
+  const chunks = chunkText(data.text);
+  console.log(`  Split into ${chunks.length} chunks`);
 
   for (let i = 0; i < chunks.length; i++) {
-    process.stdout.write(`\rEmbedding and inserting chunk ${i + 1}/${chunks.length}...`);
+    process.stdout.write(`\r  Embedding and inserting chunk ${i + 1}/${chunks.length}...`);
     const embedding = await embedChunk(chunks[i]);
     await insertChunk(chunks[i], embedding);
   }
+  process.stdout.write("\n");
 
-  console.log(`\nIngestion complete. ${chunks.length} chunks inserted into Supabase.`);
+  return chunks.length;
+}
+
+async function main() {
+  const pdfs = fs
+    .readdirSync(DATA_DIR)
+    .filter((f) => f.toLowerCase().endsWith(".pdf"))
+    .map((f) => path.join(DATA_DIR, f));
+
+  if (pdfs.length === 0) {
+    console.error(`No PDFs found in ${DATA_DIR}`);
+    console.error("Place your PDF files in backend/data/ and try again.");
+    process.exit(1);
+  }
+
+  console.log(`Found ${pdfs.length} PDF(s): ${pdfs.map((p) => path.basename(p)).join(", ")}`);
+
+  let totalChunks = 0;
+  for (const filePath of pdfs) {
+    totalChunks += await ingestPdf(filePath);
+  }
+
+  console.log(`\nIngestion complete. ${totalChunks} total chunks inserted into Supabase.`);
 }
 
 main().catch((err) => {

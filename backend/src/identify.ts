@@ -2,12 +2,16 @@ import Anthropic from "@anthropic-ai/sdk";
 import OpenAI from "openai";
 import { createClient } from "@supabase/supabase-js";
 
-const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
-const supabase = createClient(
-  process.env.SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_KEY!
-);
+function getClients() {
+  return {
+    anthropic: new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY }),
+    openai: new OpenAI({ apiKey: process.env.OPENAI_API_KEY }),
+    supabase: createClient(
+      process.env.SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_KEY!
+    ),
+  };
+}
 
 type Confidence = "alta" | "media" | "baja";
 
@@ -19,6 +23,7 @@ interface IdentifyResult {
 }
 
 async function describeSharkImage(base64Image: string): Promise<string> {
+  const { anthropic } = getClients();
   const response = await anthropic.messages.create({
     model: "claude-sonnet-4-20250514",
     max_tokens: 512,
@@ -49,6 +54,7 @@ async function describeSharkImage(base64Image: string): Promise<string> {
 }
 
 async function getEmbedding(text: string): Promise<number[]> {
+  const { openai } = getClients();
   const response = await openai.embeddings.create({
     model: "text-embedding-3-small",
     input: text,
@@ -57,6 +63,7 @@ async function getEmbedding(text: string): Promise<number[]> {
 }
 
 async function searchKnowledge(embedding: number[]): Promise<string> {
+  const { supabase } = getClients();
   const { data, error } = await supabase.rpc("match_shark_knowledge", {
     query_embedding: embedding,
     match_count: 5,
@@ -74,6 +81,7 @@ async function identifyWithContext(
   description: string,
   context: string
 ): Promise<IdentifyResult> {
+  const { anthropic } = getClients();
   const response = await anthropic.messages.create({
     model: "claude-sonnet-4-20250514",
     max_tokens: 1024,

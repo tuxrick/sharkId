@@ -1,4 +1,5 @@
-import "dotenv/config";
+import { config } from "dotenv";
+config({ override: true });
 import { serve } from "@hono/node-server";
 import { Hono } from "hono";
 import { cors } from "hono/cors";
@@ -17,8 +18,14 @@ app.post("/identify", async (c) => {
     return c.json({ error: "Missing image field" }, 400);
   }
 
-  const result = await identify(body.image);
-  return c.json(result);
+  try {
+    const result = await identify(body.image);
+    return c.json(result);
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    console.error("Identify error:", message);
+    return c.json({ error: message }, 500);
+  }
 });
 
 const port = Number(process.env.PORT) || 3000;
