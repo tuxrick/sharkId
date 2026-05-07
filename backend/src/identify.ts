@@ -88,23 +88,23 @@ async function identifyWithContext(
     messages: [
       {
         role: "user",
-        content: `You are a marine biologist specializing in shark identification.
+        content: `Eres un biólogo marino especializado en identificación de tiburones.
 
-VISUAL DESCRIPTION OF THE SHARK:
+DESCRIPCIÓN VISUAL DEL TIBURÓN:
 ${description}
 
-RELEVANT KNOWLEDGE FROM IDENTIFICATION GUIDE:
+CONOCIMIENTO RELEVANTE DE LA GUÍA DE IDENTIFICACIÓN:
 ${context}
 
-Based on the visual description and the knowledge above, identify this shark. Respond ONLY with valid JSON in this exact format:
+Con base en la descripción visual y el conocimiento anterior, identifica este tiburón. Responde ÚNICAMENTE con JSON válido en este formato exacto:
 {
-  "species": "scientific name",
-  "common_name": "common name in English",
+  "species": "nombre científico",
+  "common_name": "nombre común en español",
   "confidence": "alta" | "media" | "baja",
-  "description": "2-3 sentence explanation of key identifying features that led to this conclusion"
+  "description": "explicación en español de 2-3 oraciones sobre las características clave que llevaron a esta conclusión"
 }
 
-Use "baja" confidence if the image description lacks clear identifying features or if multiple species could match. Do not include any text outside the JSON.`,
+Usa confianza "baja" si la descripción carece de características claras o si varias especies podrían coincidir. No incluyas ningún texto fuera del JSON.`,
       },
     ],
   });
