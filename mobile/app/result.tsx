@@ -1,5 +1,5 @@
 import { router, useLocalSearchParams } from "expo-router";
-import { Pressable, ScrollView, Text, View } from "react-native";
+import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 
 interface IdentifyResult {
   species: string;
@@ -8,13 +8,13 @@ interface IdentifyResult {
   description: string;
 }
 
-const confidenceStyle: Record<IdentifyResult["confidence"], string> = {
-  alta: "bg-green-500",
-  media: "bg-yellow-500",
-  baja: "bg-red-500",
+const CONFIDENCE_COLOR: Record<IdentifyResult["confidence"], string> = {
+  alta: "#22c55e",
+  media: "#eab308",
+  baja: "#ef4444",
 };
 
-const confidenceLabel: Record<IdentifyResult["confidence"], string> = {
+const CONFIDENCE_LABEL: Record<IdentifyResult["confidence"], string> = {
   alta: "Alta",
   media: "Media",
   baja: "Baja",
@@ -25,8 +25,8 @@ export default function ResultScreen() {
 
   if (!data) {
     return (
-      <View className="flex-1 bg-black items-center justify-center">
-        <Text className="text-white text-base">Sin datos</Text>
+      <View style={styles.errorContainer}>
+        <Text style={styles.errorText}>Sin datos</Text>
       </View>
     );
   }
@@ -34,38 +34,94 @@ export default function ResultScreen() {
   const result = JSON.parse(data) as IdentifyResult;
 
   return (
-    <ScrollView
-      className="flex-1 bg-black"
-      contentContainerClassName="px-6 pt-16 pb-12"
-    >
-      <Text className="text-gray-500 text-sm uppercase tracking-widest mb-2">
-        Identificación
-      </Text>
-
-      <Text className="text-white text-4xl font-bold mb-1">
-        {result.common_name}
-      </Text>
-
-      <Text className="text-gray-400 text-lg italic mb-6">{result.species}</Text>
-
+    <ScrollView style={styles.scroll} contentContainerStyle={styles.content}>
+      <Text style={styles.eyebrow}>Identificación</Text>
+      <Text style={styles.commonName}>{result.common_name}</Text>
+      <Text style={styles.species}>{result.species}</Text>
       <View
-        className={`self-start px-4 py-1.5 rounded-full mb-8 ${confidenceStyle[result.confidence]}`}
+        style={[
+          styles.badge,
+          { backgroundColor: CONFIDENCE_COLOR[result.confidence] },
+        ]}
       >
-        <Text className="text-white font-semibold text-sm">
-          Confianza {confidenceLabel[result.confidence]}
+        <Text style={styles.badgeText}>
+          Confianza {CONFIDENCE_LABEL[result.confidence]}
         </Text>
       </View>
-
-      <Text className="text-gray-200 text-base leading-7">
-        {result.description}
-      </Text>
-
-      <Pressable
-        onPress={() => router.replace("/")}
-        className="mt-12 bg-gray-800 py-4 rounded-xl items-center active:opacity-70"
-      >
-        <Text className="text-white font-semibold text-base">Nueva foto</Text>
+      <Text style={styles.description}>{result.description}</Text>
+      <Pressable style={styles.backButton} onPress={() => router.replace("/")}>
+        <Text style={styles.backButtonText}>Nueva foto</Text>
       </Pressable>
     </ScrollView>
   );
 }
+
+const styles = StyleSheet.create({
+  scroll: {
+    flex: 1,
+    backgroundColor: "#000",
+  },
+  content: {
+    paddingHorizontal: 24,
+    paddingTop: 64,
+    paddingBottom: 48,
+  },
+  errorContainer: {
+    flex: 1,
+    backgroundColor: "#000",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  errorText: {
+    color: "#fff",
+    fontSize: 16,
+  },
+  eyebrow: {
+    color: "#6b7280",
+    fontSize: 12,
+    textTransform: "uppercase",
+    letterSpacing: 4,
+    marginBottom: 8,
+  },
+  commonName: {
+    color: "#fff",
+    fontSize: 36,
+    fontWeight: "bold",
+    marginBottom: 4,
+  },
+  species: {
+    color: "#9ca3af",
+    fontSize: 18,
+    fontStyle: "italic",
+    marginBottom: 24,
+  },
+  badge: {
+    alignSelf: "flex-start",
+    paddingHorizontal: 16,
+    paddingVertical: 6,
+    borderRadius: 999,
+    marginBottom: 32,
+  },
+  badgeText: {
+    color: "#fff",
+    fontWeight: "600",
+    fontSize: 14,
+  },
+  description: {
+    color: "#e5e7eb",
+    fontSize: 16,
+    lineHeight: 28,
+  },
+  backButton: {
+    marginTop: 48,
+    backgroundColor: "#1f2937",
+    paddingVertical: 16,
+    borderRadius: 12,
+    alignItems: "center",
+  },
+  backButtonText: {
+    color: "#fff",
+    fontWeight: "600",
+    fontSize: 16,
+  },
+});

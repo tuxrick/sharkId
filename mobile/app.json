@@ -10,14 +10,15 @@
     "ios": {
       "supportsTablet": false,
       "infoPlist": {
-        "NSCameraUsageDescription": "SharkID needs camera access to identify sharks."
+        "NSCameraUsageDescription": "SharkID needs camera access to identify sharks.",
+        "NSPhotoLibraryUsageDescription": "SharkID needs access to your photo library to identify sharks."
       }
     },
     "android": {
       "adaptiveIcon": {
         "backgroundColor": "#000000"
       },
-      "permissions": ["android.permission.CAMERA"]
+      "permissions": ["android.permission.CAMERA", "android.permission.READ_EXTERNAL_STORAGE"]
     },
     "plugins": [
       "expo-router",
@@ -25,6 +26,12 @@
         "expo-camera",
         {
           "cameraPermission": "SharkID needs camera access to identify sharks."
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "SharkID needs access to your photo library to identify sharks."
         }
       ]
     ]
