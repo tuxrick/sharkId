@@ -13,6 +13,12 @@ function getClients() {
   };
 }
 
+function log(step: string, detail?: string) {
+  const time = new Date().toISOString().slice(11, 23);
+  const msg = detail ? `[${time}] ${step}\n          ${detail}` : `[${time}] ${step}`;
+  console.log(msg);
+}
+
 type Confidence = "alta" | "media" | "baja";
 
 interface IdentifyResult {
@@ -23,6 +29,7 @@ interface IdentifyResult {
 }
 
 async function describeSharkImage(base64Image: string): Promise<string> {
+  log("🔍 [1/4] Vision  →  describiendo imagen con Claude...");
   const { anthropic } = getClients();
   const response = await anthropic.messages.create({
     model: "claude-sonnet-4-20250514",
@@ -50,19 +57,24 @@ async function describeSharkImage(base64Image: string): Promise<string> {
 
   const content = response.content[0];
   if (content.type !== "text") throw new Error("Unexpected response type");
+  log("   Vision  ✓", content.text.slice(0, 120) + "…");
   return content.text;
 }
 
 async function getEmbedding(text: string): Promise<number[]> {
+  log("🧮 [2/4] Embedding  →  generando vector con OpenAI...");
   const { openai } = getClients();
   const response = await openai.embeddings.create({
     model: "text-embedding-3-small",
     input: text,
   });
-  return response.data[0].embedding;
+  const vec = response.data[0].embedding;
+  log(`   Embedding  ✓  (${vec.length} dimensiones)`);
+  return vec;
 }
 
 async function searchKnowledge(embedding: number[]): Promise<string> {
+  log("📚 [3/4] RAG  →  buscando en Supabase pgvector...");
   const { supabase } = getClients();
   const { data, error } = await supabase.rpc("match_shark_knowledge", {
     query_embedding: embedding,
@@ -70,17 +82,26 @@ async function searchKnowledge(embedding: number[]): Promise<string> {
   });
 
   if (error) throw new Error(`Supabase search error: ${error.message}`);
-  if (!data || data.length === 0) return "No matching knowledge found.";
+  if (!data || data.length === 0) {
+    log("   RAG  ⚠  sin resultados");
+    return "No matching knowledge found.";
+  }
 
-  return (data as Array<{ content: string }>)
-    .map((row) => row.content)
-    .join("\n\n---\n\n");
+  const chunks = data as Array<{ content: string; similarity?: number }>;
+  log(`   RAG  ✓  ${chunks.length} chunks recuperados`);
+  chunks.forEach((c, i) => {
+    const sim = c.similarity != null ? ` (sim: ${c.similarity.toFixed(3)})` : "";
+    log(`          chunk ${i + 1}${sim}: ${c.content.slice(0, 80)}…`);
+  });
+
+  return chunks.map((row) => row.content).join("\n\n---\n\n");
 }
 
 async function identifyWithContext(
   description: string,
   context: string
 ): Promise<IdentifyResult> {
+  log("🦈 [4/4] Identificación  →  llamando a Claude con contexto RAG...");
   const { anthropic } = getClients();
   const response = await anthropic.messages.create({
     model: "claude-sonnet-4-20250514",
@@ -113,12 +134,21 @@ Usa confianza "baja" si la descripción carece de características claras o si v
   if (content.type !== "text") throw new Error("Unexpected response type");
 
   const parsed = JSON.parse(content.text) as IdentifyResult;
+  log(`   Identificación  ✓`, `${parsed.common_name} (${parsed.species}) — confianza: ${parsed.confidence}`);
   return parsed;
 }
 
 export async function identify(base64Image: string): Promise<IdentifyResult> {
+  log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+  log("🚀 Nueva identificación recibida");
+  const t0 = Date.now();
+
   const description = await describeSharkImage(base64Image);
   const embedding = await getEmbedding(description);
   const context = await searchKnowledge(embedding);
-  return identifyWithContext(description, context);
+  const result = await identifyWithContext(description, context);
+
+  log(`✅ Completado en ${((Date.now() - t0) / 1000).toFixed(1)}s`);
+  log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+  return result;
 }
