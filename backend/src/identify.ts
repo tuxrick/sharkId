@@ -133,7 +133,8 @@ Usa confianza "baja" si la descripción carece de características claras o si v
   const content = response.content[0];
   if (content.type !== "text") throw new Error("Unexpected response type");
 
-  const parsed = JSON.parse(content.text) as IdentifyResult;
+  const raw = content.text.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "").trim();
+  const parsed = JSON.parse(raw) as IdentifyResult;
   log(`   Identificación  ✓`, `${parsed.common_name} (${parsed.species}) — confianza: ${parsed.confidence}`);
   return parsed;
 }
